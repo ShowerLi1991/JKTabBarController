@@ -10,7 +10,7 @@
 #import "JKTabBarItem+Private.h"
 #import "_JKAppearanceProxy.h"
 
-static CGFloat const JKTabBarButtonImageVerticalOffset = 5.0f;
+static CGFloat const JKTabBarButtonImageVerticalOffset = 0.0f;
 
 static CGFloat const JKTabBarBadgeViewPopAnimationDuration = 0.4f;
 static CGFloat const JKTabBarBadgeViewFadeAnimationDuration = 0.15f;
@@ -51,16 +51,22 @@ static CGSize const JKTabBarBadgeViewMinmumSize = (CGSize){ 32.0f , 32.0f };
 }
 
 - (CGRect)titleRectForContentRect:(CGRect)contentRect{
-    CGRect titleRect = [super titleRectForContentRect:CGRectInset(contentRect, -CGRectGetWidth(contentRect), 0)];
+    CGRect titleRect = [super titleRectForContentRect:contentRect];
     CGRect imageRect = [self imageRectForContentRect:contentRect];
     
+    titleRect.size.width = contentRect.size.width;
     UIEdgeInsets titleInsets = self.titleEdgeInsets;
     titleRect.origin.x = contentRect.size.width/2 - titleRect.size.width/2 - titleInsets.left;
-    titleRect.origin.y = CGRectGetMaxY(imageRect) - titleInsets.top;
+    titleRect.origin.y = CGRectGetMaxY(imageRect) - titleInsets.top - 1;
     titleRect.size.width  = titleRect.size.width - titleInsets.right;
     titleRect.size.height = titleRect.size.height - titleInsets.bottom;
     
     return titleRect;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    self.titleLabel.textAlignment = NSTextAlignmentCenter;
 }
 
 #pragma mark - Appearence
@@ -142,15 +148,21 @@ static CGSize const JKTabBarBadgeViewMinmumSize = (CGSize){ 32.0f , 32.0f };
     return UIOffsetMake(self.itemButton.titleEdgeInsets.left, self.itemButton.titleEdgeInsets.top);
 }
 
-- (void)setTitleTextAttributes:(NSDictionary *)attributes forState:(UIControlState)state{
-    /*!Need FIX: Need to compatiable with iOS 5 and iOS 7. */    
-    [self.itemButton.titleLabel setFont:attributes[NSFontAttributeName]];
-    [self.itemButton setTitleColor:attributes[NSForegroundColorAttributeName] forState:state];
-    [self.itemButton setTitleShadowColor:[attributes[NSShadowAttributeName] shadowColor] forState:state];
+- (void)setTitleTextAttributes:(NSDictionary *)attributes forState:(UIControlState)state {
+    /*!Need FIX: Need to compatiable with iOS 5 and iOS 7. */
+    if (attributes[NSFontAttributeName]) {
+        [self.itemButton.titleLabel setFont:attributes[NSFontAttributeName]];
+    }
+    if (attributes[NSForegroundColorAttributeName]) {
+        [self.itemButton setTitleColor:attributes[NSForegroundColorAttributeName] forState:state];
+    }
+    if ([attributes[NSShadowAttributeName] shadowColor]) {
+        [self.itemButton setTitleShadowColor:[attributes[NSShadowAttributeName] shadowColor] forState:state];
+    }
     [self.itemButton.titleLabel setShadowOffset:[attributes[NSShadowAttributeName] shadowOffset]];
 }
 
-- (NSDictionary *)titleTextAttributesForState:(UIControlState)state{
+- (NSDictionary *)titleTextAttributesForState:(UIControlState)state {
     /*!Need FIX: Need to compatiable with iOS 5 and iOS 7. */
     NSShadow *titleShadow = [[NSShadow alloc] init];
     titleShadow.shadowColor = [self.itemButton titleShadowColorForState:state];
@@ -184,7 +196,7 @@ static CGSize const JKTabBarBadgeViewMinmumSize = (CGSize){ 32.0f , 32.0f };
         [button setAdjustsImageWhenHighlighted:NO];
         [button setAdjustsImageWhenDisabled:NO];
         
-        [button.titleLabel setFont:[UIFont boldSystemFontOfSize:10]];
+        [button.titleLabel setFont:[UIFont systemFontOfSize:9]];
         [button setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
         [button setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected|UIControlStateDisabled];
     }

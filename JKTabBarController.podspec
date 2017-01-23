@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.license      = 'MIT'
   s.author       = { "Jackie" => "fsjack@gmil.com" }
 
-  s.source       = { :git => "https://github.com/fsjack/JKTabBarController.git"}
+  s.source       = { :git => "https://github.com/ShowerLi1991/JKTabBarController.git"}
   s.source_files = 'JKTabBarController'
   s.framework    = 'Foundation'
 

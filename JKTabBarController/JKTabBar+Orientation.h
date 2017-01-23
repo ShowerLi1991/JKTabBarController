@@ -6,6 +6,8 @@
 //  Copyright (c) 2013年 Weico. All rights reserved.
 //
 #import <Foundation/Foundation.h>
+#import "JKTabBar.h"
+
 
 typedef NS_ENUM(NSUInteger,JKTabBarOrientation) {
     JKTabBarOrientationHorizontal,

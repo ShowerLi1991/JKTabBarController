@@ -22,6 +22,7 @@ extern CGFloat const JKTabBarSelectionIndicatorAnimationDuration;
 - (void)beginCustomizingItems:(NSArray *)items;   // list all items that can be reordered. always animates a sheet up. visible items not listed are fixed in place
 - (BOOL)endCustomizingAnimated:(BOOL)animated;    // hide customization sheet. normally you should let the user do it. check list of items to see new layout. returns YES if layout changed
 - (BOOL)isCustomizing;
+-(void)isBlurForHiddenPartViews:(BOOL)isBlur;
 
 
 /* tintColor will be applied to the tab bar background
@@ -55,6 +56,7 @@ extern CGFloat const JKTabBarSelectionIndicatorAnimationDuration;
 @protocol JKTabBarDelegate<NSObject>
 @optional
 
+- (BOOL)tabBar:(JKTabBar *)tabBar shouldSelectItem:(JKTabBarItem *)item;
 - (void)tabBar:(JKTabBar *)tabBar didSelectItem:(JKTabBarItem *)item; // called when a new view is selected by the user (but not programatically)
 
 /* called when user shows or dismisses customize sheet. you can use the 'willEnd' to set up what appears underneath.

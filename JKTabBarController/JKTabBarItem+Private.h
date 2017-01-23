@@ -7,6 +7,8 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "JKTabBarItem.h"
+
 typedef NS_ENUM(NSUInteger, JKTabBarItemType) {
     JKTabBarItemTypeButton,
     JKTabBarItemTypeCustomView
@@ -15,6 +17,7 @@ typedef NS_ENUM(NSUInteger, JKTabBarItemType) {
 @interface JKTabBarItem (Private)
 @property (nonatomic, readonly) JKTabBarItemType   itemType;
 @property (nonatomic, readonly) UIView             *contentView;
+@property (nonatomic, readonly)  UIButton    *badgeButton;
 
 //methods below wont efficent if itemType is JKTabBarItemTypeCustomView
 - (void)addTarget:(id)target action:(SEL)action forControlEvents:(UIControlEvents)controlEvents;

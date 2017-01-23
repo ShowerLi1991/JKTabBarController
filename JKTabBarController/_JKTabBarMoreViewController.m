@@ -17,7 +17,7 @@
 @implementation _JKTabBarMoreViewController
 #pragma mark - dealloc
 - (void)dealloc{
-    [_tabBarController removeObserver:self forKeyPath:@"customizableViewControllers"];
+//    [_tabBarController removeObserver:self forKeyPath:@"customizableViewControllers"];
 }
 
 #pragma mark - view
@@ -38,21 +38,21 @@
 
 - (void)setTabBarController:(JKTabBarController *)tabBarController{
     if(_tabBarController == tabBarController) return;
-    [_tabBarController removeObserver:self forKeyPath:@"customizableViewControllers"];
+//    [_tabBarController removeObserver:self forKeyPath:@"customizableViewControllers"];
     _tabBarController = tabBarController;
-    [_tabBarController addObserver:self forKeyPath:@"customizableViewControllers" options:NSKeyValueObservingOptionNew context:nil];
+//    [_tabBarController addObserver:self forKeyPath:@"customizableViewControllers" options:NSKeyValueObservingOptionNew context:nil];
 }
 
 #pragma mark - KVO
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
-    if([keyPath isEqualToString:@"customizableViewControllers"]){
-        NSArray *customizableViewControllers = change[NSKeyValueChangeNewKey];
-        if(customizableViewControllers.count)
-            self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemEdit target:self action:@selector(editAction:)];
-    }else{
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-    }
-}
+//- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
+//    if([keyPath isEqualToString:@"customizableViewControllers"]){
+//        NSArray *customizableViewControllers = change[NSKeyValueChangeNewKey];
+//        if(customizableViewControllers.count)
+//            self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemEdit target:self action:@selector(editAction:)];
+//    }else{
+//        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+//    }
+//}
 
 #pragma mark - action
 - (void)editAction:(UIBarButtonItem *)item{

@@ -12,8 +12,9 @@
 #import "_JKTabBarMoreViewController.h"
 #import "JKTabBarItem+Private.h"
 #import <objc/runtime.h>
+#import "JKBlurView.h"
 
-static CGFloat const JKTabBarDefaultHeight = 45.0f;
+static CGFloat const JKTabBarDefaultHeight = 46.0f;
 NSUInteger const JKTabBarMaximumItemCount = 5;
 
 @interface JKTabBarController (){
@@ -28,6 +29,11 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 @property (nonatomic,strong) JKTabBarItem                *moreTabBarItem;
 @property (nonatomic,weak)   UIView                      *containerView;
 @property (nonatomic,weak)   JKTabBar                    *tabBar;
+@property (nonatomic,readonly) CGFloat                   tabBarHeight;
+
+@property (nonatomic,weak)   UIVisualEffectView *   visualEffectView;
+@property (nonatomic,weak)   UIView *   backgroundlineView ;
+@property (nonatomic,weak)   JKBlurView *   blurView;
 @end
 
 @implementation JKTabBarController
@@ -41,31 +47,89 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 
 #pragma mark - Private Methods
 - (void)_setupAppearence{
-    [self.tabBar removeFromSuperview];
-    [self.containerView removeFromSuperview];
-    
     JKTabBar *tabBar        = [[JKTabBar alloc] initWithFrame:CGRectZero];
     self.tabBar             = tabBar;
     tabBar.delegate         = self;
     
     UIView *containerView = [[UIView alloc] initWithFrame:CGRectZero];
     self.containerView = containerView;
-    
     [self.view addSubview:containerView];
     [self.view addSubview:tabBar];
-    
-    
+   
     self.tabBarPosition = JKTabBarPositionBottom;
 }
-
-- (UIViewController *)_viewControllerForTabBarItem:(JKTabBarItem *)item{
-    if (item == nil) {
-        return nil;
+-(void)showBlurView:(BOOL)isShow  lightOrNight:(NightOrLightModel) model
+{
+    Class bClass=NSClassFromString(@"UIVisualEffectView");
+    if (isShow&&bClass) {
+        
+            if (!self.visualEffectView) {
+                UIBlurEffect *blur = nil;
+                if (model ==LightModel) {
+                    blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight];
+                }else if (model ==NightModel) {
+                    
+                    blur = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
+                }
+                
+                UIVisualEffectView *visualEffectView = [[UIVisualEffectView alloc] initWithEffect:blur];
+                visualEffectView.frame = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)-46} , {CGRectGetWidth(self.view.bounds), 46.0} };
+                visualEffectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                visualEffectView.alpha = 1.0;
+                visualEffectView.tag =100100;
+                self.visualEffectView =visualEffectView;
+                [self.view insertSubview:visualEffectView belowSubview:self.tabBar];
+                
+                UIView *overLayView =[[UIView alloc]initWithFrame:visualEffectView.frame];
+                overLayView.backgroundColor = [UIColor blackColor];
+                overLayView.alpha  = 0.8;
+                [visualEffectView.contentView addSubview:overLayView];
+            }
+            if (model ==NightModel) {
+                if (!self.blurView) {
+                    JKBlurView *blurView =[[JKBlurView alloc]initWithFrame:self.visualEffectView.frame];
+                    [self.view insertSubview:blurView belowSubview:self.tabBar];
+                    blurView.tintColor = [UIColor blackColor];
+                    blurView.alpha =0.7;
+                    blurView.tag  =100103;
+                    self.blurView =blurView;
+                    [self.view insertSubview:blurView belowSubview:self.tabBar];
+                }
+               self.blurView.hidden = NO;
+            }else if (model ==LightModel){
+            
+                self.blurView.hidden = YES;
+            }
+            if (!self.backgroundlineView) {
+                UIView *backgroundlineView = [[UIView alloc] initWithFrame:(CGRect){ {0 , CGRectGetHeight(self.view.bounds)-48} , {CGRectGetWidth(self.view.bounds), 2} }];
+                backgroundlineView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                backgroundlineView.alpha =0.5;
+                backgroundlineView.tag =100101;
+                if (model ==LightModel) {
+                    backgroundlineView.backgroundColor = [UIColor colorWithRed:204.0/255.0 green:204.0/255.0  blue:204.0/255.0  alpha:1.0];
+                }else if (model ==NightModel) {
+                    
+                    backgroundlineView.backgroundColor = [UIColor colorWithRed:20.0/255.0 green:23.0/255.0  blue:26.0/255.0  alpha:1.0];
+                }
+                [self.view insertSubview:backgroundlineView belowSubview:self.tabBar];
+                self.backgroundlineView =backgroundlineView;
+            }
+            
+            self.visualEffectView.hidden =NO;
+            self.backgroundlineView.hidden =NO;
+           [self.tabBar isBlurForHiddenPartViews:YES];
     }
+    else{
     
-    if(item == self.moreTabBarItem) {
-        return self.moreNavigationController;
+        self.visualEffectView.hidden =YES;
+        self.backgroundlineView.hidden =YES;
+        self.blurView.hidden = YES;
+        [self.tabBar isBlurForHiddenPartViews:NO];
     }
+   
+}
+- (UIViewController *)_viewControllerForTabBarItem:(JKTabBarItem *)item{
+    if(item == self.moreTabBarItem) return self.moreNavigationController;
     
     NSArray *fileterViewControllers = [self.viewControllers filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(UIViewController *evaluatedObject, NSDictionary *bindings) {
         if(evaluatedObject.tabBarItem_jk == item)
@@ -124,10 +188,10 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
         return [self traverseSubviewsToGetViewOfClass:viewClass inView:view.subviews.firstObject];
 }
 
-- (void)_selectTabBarItem:(JKTabBarItem *)tabBarItem{
+- (BOOL)_selectTabBarItem:(JKTabBarItem *)tabBarItem{
     UIViewController *viewController = [self _viewControllerForTabBarItem:tabBarItem];
     
-    if(viewController == self.selectedViewController) return;
+    if(viewController == self.selectedViewController) return NO;
     
     [self.selectedViewController willMoveToParentViewController:nil];
     [self.selectedViewController.view removeFromSuperview];
@@ -143,6 +207,8 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
     [self adjustSelectedViewControllerInsetsIfNeeded];
     
     [viewController didMoveToParentViewController:self];
+    
+    return YES;
 }
 
 - (void)adjustSelectedViewControllerInsetsIfNeeded {
@@ -157,15 +223,15 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 }
 
 #pragma mark - Property Methods
-- (BOOL)isTabBarHidden{
+- (BOOL) isTabBarHidden{
     CGRect viewBounds = self.view.bounds;
     CGRect tabBarFrame = self.tabBar.frame;
     
     switch (self.tabBarPosition) {
         case JKTabBarPositionTop:
-            return (tabBarFrame.origin.y == -[self.class tabBarHeight]);
+            return (tabBarFrame.origin.y == -JKTabBarDefaultHeight);
         case JKTabBarPositionLeft:
-            return (tabBarFrame.origin.x == -[self.class tabBarHeight]);
+            return (tabBarFrame.origin.x == -JKTabBarDefaultHeight);
         case JKTabBarPositionRight:
             return (tabBarFrame.origin.x == viewBounds.size.width);
         default:
@@ -173,7 +239,7 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
     }
 }
 
-+ (CGFloat)tabBarHeight {
+- (CGFloat)tabBarHeight{
     return JKTabBarDefaultHeight;
 }
 
@@ -187,12 +253,24 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
     CGRect tabBarFrame = self.tabBar.frame;
     CGRect viewBounds = self.view.bounds;
     CGRect containerViewFrame = self.containerView.frame;
+    CGRect  visualEffectViewFrame = self.visualEffectView.frame;
+    CGRect  backgroundlineViewFrame = self.backgroundlineView.frame;
+    CGRect  blurViewFrame = self.blurView.frame;
     
     if(self.shouldAdjustSelectedViewContentInsets) {
         if(hidden){
             tabBarFrame.origin.y = viewBounds.size.height;
+            
+            visualEffectViewFrame = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)} , {CGRectGetWidth(self.view.bounds), 46.0} };
+            backgroundlineViewFrame  = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)} , {CGRectGetWidth(self.view.bounds), 2} };
+            blurViewFrame  =self.visualEffectView.frame;
+            
         }else{
-            tabBarFrame.origin.y = viewBounds.size.height - [self.class tabBarHeight];
+            tabBarFrame.origin.y = viewBounds.size.height - JKTabBarDefaultHeight;
+            
+            visualEffectViewFrame = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)-46} , {CGRectGetWidth(self.view.bounds), 46.0} };
+            backgroundlineViewFrame  = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)-48} , {CGRectGetWidth(self.view.bounds), 2} };
+            blurViewFrame  =self.visualEffectView.frame;
         }
         containerViewFrame = viewBounds;
     } else {
@@ -200,21 +278,40 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
             tabBarFrame.origin.y = viewBounds.size.height;
             containerViewFrame = viewBounds;
             containerViewFrame.size.height += self.tabBarBackgroundTopInset;
+            
+           visualEffectViewFrame = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)} , {CGRectGetWidth(self.view.bounds), 46.0} };
+            backgroundlineViewFrame  = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)} , {CGRectGetWidth(self.view.bounds), 2} };
+            blurViewFrame  =self.visualEffectView.frame;
+            
         }else{
-            tabBarFrame.origin.y = viewBounds.size.height - [self.class tabBarHeight];
-            containerViewFrame.size.height = viewBounds.size.height - [self.class tabBarHeight] + self.tabBarBackgroundTopInset;
+            tabBarFrame.origin.y = viewBounds.size.height - JKTabBarDefaultHeight;
+            containerViewFrame.size.height = viewBounds.size.height - JKTabBarDefaultHeight + self.tabBarBackgroundTopInset;
+            
+            visualEffectViewFrame = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)-46} , {CGRectGetWidth(self.view.bounds), 46.0} };
+            backgroundlineViewFrame  = (CGRect){ {0 , CGRectGetHeight(self.view.bounds)-48} , {CGRectGetWidth(self.view.bounds), 2} };
+           blurViewFrame  =self.visualEffectView.frame;
         }
     }
     
-    self.tabBar.userInteractionEnabled = NO;
-    [UIView animateWithDuration:animated ? UINavigationControllerHideShowBarDuration : 0
+    if (hidden && !self.blurView.hidden) {
+        self.blurView.hidden = YES;
+    }
+    
+    [UIView animateWithDuration:animated ? 0.2 : 0
                           delay:0
-                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowAnimatedContent
                      animations:^{
+                         
                          self.tabBar.frame = tabBarFrame;
                          self.containerView.frame = containerViewFrame;
+                         self.visualEffectView.frame =visualEffectViewFrame;
+                         self.backgroundlineView.frame  =backgroundlineViewFrame;
+                         self.blurView.frame  =blurViewFrame;
+                         
                      } completion:^(BOOL finished) {
-                         self.tabBar.userInteractionEnabled = YES;
+                         if (!hidden && self.blurView.hidden) {
+                             self.blurView.hidden = NO;
+                         }
                      }];
 }
 
@@ -242,8 +339,8 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
             tabBarAutoResizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
             break;
     }
-    
-    CGRectDivide(self.view.bounds, &tabBarFrame, &containerViewFrame, self.class.tabBarHeight , rectEdge);
+
+    CGRectDivide(self.view.bounds, &tabBarFrame, &containerViewFrame, self.tabBarHeight , rectEdge);
     self.tabBar.frame = tabBarFrame;
     if(self.shouldAdjustSelectedViewContentInsets) {
         containerViewFrame = self.view.bounds;
@@ -270,6 +367,14 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
     return _moreNavigationController;
 }
 
+- (JKTabBarItem *)moreTabBarItem{
+    if(!_moreTabBarItem){
+        JKTabBarItem *item = [self _tabBarItemsForViewController:self.moreNavigationController];
+        _moreTabBarItem = item;
+    }
+    return _moreTabBarItem;
+}
+
 - (void)setSelectedIndex:(NSUInteger)selectedIndex{
     if(_selectedIndex == selectedIndex) return;
     if(selectedIndex > self.tabBar.items.count-1){
@@ -288,7 +393,7 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 
 - (void)setTabBarBackgroundTopInset:(CGFloat)tabBarBackgroundTopInset{
     _tabBarBackgroundTopInset = tabBarBackgroundTopInset;
-    [self setTabBarPosition:self.tabBarPosition];
+    [self setTabBarPosition:self.tabBarPosition];    
 }
 
 - (void)setShouldAdjustSelectedViewContentInsets:(BOOL)shouldAdjustSelectedViewContentInsets {
@@ -297,16 +402,9 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 }
 
 #pragma mark - Initialition
-
-- (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
-    if (self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil]) {
-        [self _setupAppearence];
-    }
-    return self;
-}
-
-- (id)initWithCoder:(NSCoder *)aDecoder {
-    if (self = [super initWithCoder:aDecoder]) {
+- (id)init{
+    self = [super init];
+    if(self){
         [self _setupAppearence];
     }
     return self;
@@ -341,16 +439,11 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
         if(idx == JKTabBarMaximumItemCount-1 && self.shouldShowMore){
             /* add 'more' tab bar item if index is out of maximum count */
             *stop = YES;
-            item = [self _tabBarItemsForViewController:self.moreNavigationController];
-            self.moreTabBarItem = item;
+            item = self.moreTabBarItem;
         }else{
             item = [self _tabBarItemsForViewController:rootViewController];
         }
         [items addObject:item];
-        
-        if([self.delegate respondsToSelector:@selector(tabBarController:shouldSelectViewController:)]){
-            item.enabled = [self.delegate tabBarController:self shouldSelectViewController:rootViewController];
-        }
     }];
     self.tabBar.items = items;
     
@@ -359,15 +452,24 @@ NSUInteger const JKTabBarMaximumItemCount = 5;
 }
 
 #pragma mark - JKTabBarDelegate
+
+- (BOOL)tabBar:(JKTabBar *)tabBar shouldSelectItem:(JKTabBarItem *)item {
+    if([self.delegate respondsToSelector:@selector(tabBarController:shouldSelectViewController:)]){
+        return [self.delegate tabBarController:self
+                    shouldSelectViewController:[self _viewControllerForTabBarItem:item]];
+    }
+    return YES;
+}
+
 - (void)tabBar:(JKTabBar *)tabBar didSelectItem:(JKTabBarItem *)item{
     
     if([self.delegate respondsToSelector:@selector(tabBarController:willSelectViewController:)])
         [self.delegate tabBarController:self willSelectViewController:[self _viewControllerForTabBarItem:item]];
     
-    [self _selectTabBarItem:item];
+    BOOL isNewViewController = [self _selectTabBarItem:item];
     
     /*! Need FIX: self.navigationController should update it's navigation item */
-    if(self.selectedControllerNavigationItem){
+    if(self.selectedControllerNavigationItem && isNewViewController){
         BOOL navigationBarHidden = self.navigationController.navigationBarHidden;
         [self.navigationController setNavigationBarHidden:YES];
         [self.navigationController setNavigationBarHidden:navigationBarHidden];
